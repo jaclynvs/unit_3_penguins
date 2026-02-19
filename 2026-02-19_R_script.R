@@ -39,6 +39,7 @@ my_t_test2
 data_for_t_test = penguins %>%
   dplyr::filter(species %in% c("Gentoo", "Adelie"), !is.na(body_mass_g)) %>%
   select(species, body_mass_g) %>%
+  droplevels()
 
 summary(data_for_t_test)
 
@@ -63,6 +64,10 @@ class(my_ind_t_test)
 # using welch's
 data_for_t_test %>%
   t_test(body_mass_g ~ species)
+
+head(data_for_t_test)
+dim(data_for_t_test)
+summary(data_for_t_test)
 
 # using students
 data_for_t_test %>%
