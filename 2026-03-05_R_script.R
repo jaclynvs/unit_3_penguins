@@ -72,3 +72,96 @@ lm_3_predict = lm_3 %>%
   broom::augment(newdata = newdata, se_fit = T, interval = "confidence", conf.int = 0.95)
 
 head(lm_3_predict)
+
+lm_4 = lm(bill_depth_mm ~ bill_length_mm + species + bill_length_mm * species, data = penguins_lm_3)
+# short hand for above line 
+lm_4 = lm(bill_depth_mm ~ bill_length_mm * species, data = penguins_lm_3)
+
+summary(lm_4)
+
+AIC(lm_3, lm_4)
+
+# step function
+best_model = step(lm_4)
+best_model
+
+lm_4_predict = lm_4 %>%
+  broom::augment(se_fit = T, interval = "confidence")
+
+head(lm_4_predict)
+
+ggplot(data = lm_4_predict) +
+  geom_point(aes(x = bill_length_mm, y = bill_depth_mm, color = species))+
+  geom_line(aes(x = bill_length_mm, y = .fitted, color = species)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, x = bill_length_mm, fill = species), alpha = 0.3) +
+  theme_classic()
+
+# 2 continuous variable predictors
+library(car) #vif()
+
+gentoo = penguins %>%
+  filter(species == "Gentoo")
+summary(gentoo)
+
+lm_gentoo_1 = lm(bill_depth_mm ~ bill_length_mm, data = gentoo)
+lm_gentoo_2 = lm(bill_depth_mm ~ bill_length_mm + flipper_length_mm, data = gentoo)
+lm_gentoo_3 = lm(bill_depth_mm ~ bill_length_mm + flipper_length_mm + body_mass_g, data = gentoo)
+
+AIC(lm_gentoo_1, lm_gentoo_2, lm_gentoo_3)
+step(lm_gentoo_3)
+summary(lm_gentoo_3)
+
+vif(lm_gentoo_3)
+
+newdata = gentoo %>%
+  select(body_mass_g) %>%
+  mutate(flipper_length_mm = median(gentoo$flipper_length_mm, na.rm = T)) %>%
+  mutate(bill_length_mm = median(gentoo$bill_length_mm, na.rm = T))
+  
+head(newdata)
+head(gentoo)
+
+lm_gentoo_3_predict = lm_gentoo_3 %>%
+  broom::augment(newdata = newdata, se_fit = T, interval = "confidence")
+head(lm_gentoo_3_predict)
+
+ggplot(data = lm_gentoo_3_predict) +
+  geom_point(aes(x = body_mass_g, y = bill_depth_mm), data = gentoo) +
+  geom_line(aes(x = body_mass_g, y = .fitted)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, x = body_mass_g), alpha = 0.3) +
+  annotate("text", x = 4250, y = 17, label = paste0("flipper length = ", median(gentoo$flipper_length_mm, na.rm = T))) +
+  annotate("text", x = 4250, y = 16.5, label = paste0("bill length = ", median(gentoo$bill_length_mm, na.rm = T))) +
+  theme_bw()
+
+# ????? exercise not working
+newdata2 = gentoo %>%
+  select(flipper_length_mm) %>%
+  mutate(flipper_length_mm = median(gentoo$flipper_length_mm, na.rm = T)) %>%
+  mutate(bill_depth_mm = median(gentoo$bill_depth_mm, na.rm = T))
+
+lm_gentoo_3_predict2 = lm_gentoo_3 %>%
+  broom::augment(newdata = newdata2, se_fit = T, interval = "confidence")
+head(lm_gentoo_3_predict2)
+
+ggplot(data = lm_gentoo_3_predict) +
+  geom_point(aes(x = bill_depth_mm, y = flipper_length_mm), data = gentoo) +
+  geom_line(aes(x = bill_depth_mm, y = .fitted)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, x = bill_depth_mm), alpha = 0.3) +
+  annotate("text", x = 4250, y = 17, label = paste0("body mass = ", median(gentoo$body_mass_g, na.rm = T))) +
+  annotate("text", x = 4250, y = 16.5, label = paste0("bill length = ", median(gentoo$bill_length_mm, na.rm = T))) +
+  theme_bw()
+###
+
+# ANOVA
+penguins_lm = lm(body_mass_g ~ species + sex, data = penguins)
+summary(penguins_lm)
+anova(penguin_lm)
+
+penguins %>%
+  group_by(sex) %>%
+  summarize(mean_body_mass_g = mean(body_mass_g, na.rm = T))
+
+penguins_anova = aov(body_mass_g ~ sex + species, data = penguins)
+summary(penguins_anova)
+
+TukeyHSD(penguins_anova)
